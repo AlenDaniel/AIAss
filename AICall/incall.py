@@ -16,20 +16,47 @@ def send_at_command(command, expected_response, timeout=2):
 def enable_clip():
     send_at_command('AT+CLIP=1', 'OK')
 
+# def answer_call():
+#     print("接听电话...")
+#     ser.write(b'ATH\r\n')  # 接听电话
+#     time.sleep(5)  # 增加等待时间，确保 GSM 模块能响应
+#     response = ser.read_all().decode()
+#     if 'OK' in response:
+#         print("电话已接听")
+#     else:
+#         print("接听电话失败")
 def answer_call():
+    """
+    接听电话并保持通话
+    """
     print("接听电话...")
-    ser.write(b'ATH\r\n')  # 接听电话
-    time.sleep(5)  # 增加等待时间，确保 GSM 模块能响应
+    ser.write(b'ATA\r\n')  # 使用 ATA 命令接听电话
+    time.sleep(10)  # 等待响应
+    
     response = ser.read_all().decode()
     if 'OK' in response:
-        print("电话已接听")
+        print("电话已接听，通话保持中...")
+        while True:
+            # 持续监听电话连接状态
+            response = ser.read_all().decode()
+            if 'NO CARRIER' in response:  # 检测挂断信号
+                print("对方已挂断电话，通话结束。")
+                break
+            time.sleep(1)  # 每秒检查一次状态
     else:
-        print("接听电话失败")
+        print("接听电话失败，模块未响应。")
+
 
 def monitor_incoming_call():
     print("等待来电...")
     while True:
-        response = ser.read_all().decode()
+        # response = ser.read_all().decode()
+        response = ser.read_all()
+        try:
+            response = response.decode('utf-8')
+        except UnicodeDecodeError:
+            response = response.decode('latin1')  # 或使用 `errors='ignore'`
+        
         print(response)  # 打印所有接收到的串口信息
         if 'RING' in response and '+CLIP' in response:
             print("检测到来电！")
