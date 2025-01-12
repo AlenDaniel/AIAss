@@ -1,0 +1,9 @@
+fastapi
+loguru
+matplotlib
+notifiers
+numpy
+pydantic
+pyserial
+Requests
+uvicorn

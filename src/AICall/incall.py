@@ -1,5 +1,6 @@
 import serial
 import time
+from loguru import logger as log
 
 # 初始化串口
 ser = serial.Serial('/dev/ttyUSB0', baudrate=9600, timeout=1)
@@ -9,66 +10,58 @@ def send_at_command(command, expected_response, timeout=2):
     time.sleep(timeout)
     response = ser.read_all().decode()
     if expected_response in response:
-        print(f"命令：{command} 成功")
+        log.info(f"命令：{command} 成功")
     else:
-        print(f"命令：{command} 失败，响应：{response}")
+        log.info(f"命令：{command} 失败，响应：{response}")
 
 def enable_clip():
     send_at_command('AT+CLIP=1', 'OK')
 
-# def answer_call():
-#     print("接听电话...")
-#     ser.write(b'ATH\r\n')  # 接听电话
-#     time.sleep(5)  # 增加等待时间，确保 GSM 模块能响应
-#     response = ser.read_all().decode()
-#     if 'OK' in response:
-#         print("电话已接听")
-#     else:
-#         print("接听电话失败")
+
 def answer_call():
     """
     接听电话并保持通话
     """
-    print("接听电话...")
+    log.info("接听电话...")
     ser.write(b'ATA\r\n')  # 使用 ATA 命令接听电话
     time.sleep(10)  # 等待响应
     
     response = ser.read_all().decode()
     if 'OK' in response:
-        print("电话已接听，通话保持中...")
+        log.info("电话已接听，通话保持中...")
         while True:
             # 持续监听电话连接状态
             response = ser.read_all().decode()
             if 'NO CARRIER' in response:  # 检测挂断信号
-                print("对方已挂断电话，通话结束。")
+                log.info("对方已挂断电话，通话结束。")
                 break
             time.sleep(1)  # 每秒检查一次状态
     else:
-        print("接听电话失败，模块未响应。")
+        log.warning("接听电话失败，模块未响应。")
 
 
 def monitor_incoming_call():
-    print("等待来电...")
+    log.info("等待来电...")
     while True:
-        # response = ser.read_all().decode()
-        response = ser.read_all()
-        try:
-            response = response.decode('utf-8')
-        except UnicodeDecodeError:
-            response = response.decode('latin1')  # 或使用 `errors='ignore'`
+        response = ser.read_all().decode(errors='ignore')
+        # response = ser.read_all()
+        # try:
+        #     response = response.decode('utf-8')
+        # except UnicodeDecodeError:
+        #     response = response.decode('latin1')  # 或使用 `errors='ignore'`
         
-        print(response)  # 打印所有接收到的串口信息
         if 'RING' in response and '+CLIP' in response:
-            print("检测到来电！")
-            print(response)  # 打印来电信息
+            log.info("检测到来电！")
+            log.info(response)  # 打印来电信息
             # 提取来电号码
             call_number = response.split('"')[1]
-            print(f"来电号码: {call_number}")
+            log.warning(f"来电号码: {call_number}")
             answer_call()  # 尝试接听电话
 
         time.sleep(1)
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
+def init():
     # 初始化 GSM 模块
     send_at_command('AT', 'OK')  # 确保模块连接成功
     send_at_command('AT+CSQ', 'OK')  # 检查信号强度
