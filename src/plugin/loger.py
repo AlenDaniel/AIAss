@@ -4,6 +4,7 @@ import sys
 import notifiers
 from loguru import logger as log
 from notifiers.logging import NotificationHandler
+from notifiers import get_notifier
 
 # 自定义模块
 from .plugin_config import *
@@ -18,11 +19,12 @@ class Log():
         if subject is  not None:
             Notify['subject'] = subject
         
-        # 日志告警
+        
+        # 日志初始化
         notifier = notifiers.get_notifier("email")
-        notifier.notify(message="来电日志", **Notify)
+        notifier.notify(message="终端日志记录", **Notify)
 
-        # 发生Error时，邮件告警
+        # 发生业务时，邮件通知
         handler = NotificationHandler("email", defaults=Notify)
 
         #初始化日志文件
